@@ -1,0 +1,154 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+   CARDÁPIO DIGITAL - DESIGN SYSTEM
+   Premium dark theme with gold accents
+   ============================================================================= */
+
+@layer base {
+  :root {
+    /* Background Colors - Deep Black */
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+
+    /* Card - Slightly lighter black */
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+
+    /* Popover */
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary - Gold/Amber */
+    --primary: 43 74% 52%;
+    --primary-foreground: 0 0% 4%;
+
+    /* Secondary - Dark gray */
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+
+    /* Muted - Darker elements */
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+
+    /* Accent - Gold variant */
+    --accent: 43 74% 45%;
+    --accent-foreground: 0 0% 4%;
+
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders and inputs */
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 43 74% 52%;
+
+    --radius: 0.75rem;
+
+    /* Custom gold shades */
+    --gold: 43 74% 52%;
+    --gold-light: 43 74% 62%;
+    --gold-dark: 43 74% 42%;
+    --gold-muted: 43 40% 35%;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 5%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 43 74% 52%;
+    --sidebar-primary-foreground: 0 0% 4%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 43 74% 52%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+@layer utilities {
+  /* Gold gradient for cards */
+  .gradient-gold-card {
+    background: linear-gradient(
+      135deg,
+      hsl(0 0% 8%) 0%,
+      hsl(0 0% 6%) 50%,
+      hsl(43 20% 8%) 100%
+    );
+  }
+
+  /* Gold border glow effect */
+  .gold-glow {
+    box-shadow: 0 0 20px hsla(43, 74%, 52%, 0.15);
+  }
+
+  /* Gold text gradient */
+  .text-gold-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(43 74% 52%) 0%,
+      hsl(43 74% 65%) 50%,
+      hsl(43 74% 52%) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Premium button hover */
+  .btn-gold-hover {
+    @apply transition-all duration-300;
+  }
+  
+  .btn-gold-hover:hover {
+    box-shadow: 0 0 25px hsla(43, 74%, 52%, 0.4);
+    transform: translateY(-1px);
+  }
+
+  /* Subtle card hover */
+  .card-hover {
+    @apply transition-all duration-300;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px hsla(0, 0%, 0%, 0.3),
+                0 0 20px hsla(43, 74%, 52%, 0.1);
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-gold::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-gold::-webkit-scrollbar-track {
+    background: hsl(0 0% 10%);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-gold::-webkit-scrollbar-thumb {
+    background: hsl(43 74% 35%);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-gold::-webkit-scrollbar-thumb:hover {
+    background: hsl(43 74% 45%);
+  }
+}
