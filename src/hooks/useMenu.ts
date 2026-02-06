@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Category, Product, MenuConfig } from '../types/database';
@@ -34,21 +35,44 @@ export const useMenu = () => {
 
       if (productsError) throw productsError;
 
-      // Buscar configurações do menu
-      const { data: configData, error: configError } = await supabase
-        .from('menu_config')
-        .select('*')
-        .limit(1)
-        .single();
+      // Tentar buscar da nova tabela 'settings' primeiro
+      const { data: settingsData } = await supabase
+        .from('settings')
+        .select('key, value');
 
-      if (configError && configError.code !== 'PGRST116') {
-        // PGRST116 = nenhum registro encontrado (não é erro crítico)
-        throw configError;
+      if (settingsData && settingsData.length > 0) {
+        const s: Record<string, any> = {};
+        settingsData.forEach(item => {
+          s[item.key] = item.value;
+        });
+
+        // Mapear nova estrutura para a interface MenuConfig esperada pelo cardápio
+        const mappedConfig: MenuConfig = {
+          id: 'dynamic',
+          whatsapp_number: s['general.phone'] || '',
+          minimum_order: s['orders.minimum_value'] || 0,
+          neighborhoods: s['delivery.neighborhoods'] || [],
+          restaurant_name: s['general.name'],
+          restaurant_tagline: s['general.description'],
+          is_open: s['orders.enabled'] !== false,
+          updated_at: new Date().toISOString()
+        };
+        setConfig(mappedConfig);
+      } else {
+        // Fallback para a tabela antiga 'menu_config'
+        const { data: configData } = await supabase
+          .from('menu_config')
+          .select('*')
+          .limit(1)
+          .single();
+        
+        if (configData) {
+          setConfig(configData);
+        }
       }
 
       setCategories(categoriesData || []);
       setProducts(productsData || []);
-      setConfig(configData || null);
     } catch (err) {
       console.error('Erro ao carregar dados do menu:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
@@ -58,71 +82,40 @@ export const useMenu = () => {
   };
 
   useEffect(() => {
-    // Buscar dados iniciais
     fetchData();
 
-    // Configurar subscriptions para atualizações em tempo real
     const categoriesChannel = supabase
       .channel('categories_realtime')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'categories' 
-        },
-        (payload) => {
-          console.log('Categoria atualizada:', payload);
-          fetchData();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => fetchData())
       .subscribe();
 
     const productsChannel = supabase
       .channel('products_realtime')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'products' 
-        },
-        (payload) => {
-          console.log('Produto atualizado:', payload);
-          fetchData();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchData())
       .subscribe();
 
     const configChannel = supabase
       .channel('config_realtime')
-      .on(
-        'postgres_changes',
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'menu_config' 
-        },
-        (payload) => {
-          console.log('Configuração atualizada:', payload);
-          fetchData();
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_config' }, () => fetchData())
+      .subscribe();
+      
+    const settingsChannel = supabase
+      .channel('settings_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => fetchData())
       .subscribe();
 
-    // Cleanup: desinscrever ao desmontar componente
     return () => {
       categoriesChannel.unsubscribe();
       productsChannel.unsubscribe();
       configChannel.unsubscribe();
+      settingsChannel.unsubscribe();
     };
   }, []);
 
-  // Agrupar produtos por categoria
   const categoriesWithProducts = categories.map(category => ({
     ...category,
     products: products.filter(p => p.category_id === category.id)
-  })).filter(cat => cat.products.length > 0); // Apenas categorias com produtos
+  })).filter(cat => cat.products.length > 0);
 
   return {
     categories,
