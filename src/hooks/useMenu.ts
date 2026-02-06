@@ -46,15 +46,23 @@ export const useMenu = () => {
           s[item.key] = item.value;
         });
 
+        // Obter o dia da semana atual em inglês para bater com as chaves do banco
+        const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const today = days[new Date().getDay()];
+        const todaySettings = s[`hours.${today}`] || { open: '18:00', close: '23:00', closed: false };
+
         // Mapear nova estrutura para a interface MenuConfig esperada pelo cardápio
         const mappedConfig: MenuConfig = {
           id: 'dynamic',
           whatsapp_number: s['general.phone'] || '',
           minimum_order: s['orders.minimum_value'] || 0,
           neighborhoods: s['delivery.neighborhoods'] || [],
-          restaurant_name: s['general.name'],
-          restaurant_tagline: s['general.description'],
-          is_open: s['orders.enabled'] !== false,
+          restaurant_name: s['general.name'] || 'Noir Menu',
+          restaurant_tagline: s['general.description'] || 'O melhor sabor da cidade',
+          is_open: s['orders.enabled'] !== false && !todaySettings.closed,
+          open_time: todaySettings.open || '18:00',
+          close_time: todaySettings.close || '23:00',
+          working_days: 'Todos os dias', // Simplificado ou pode ser mapeado
           updated_at: new Date().toISOString()
         };
         setConfig(mappedConfig);
@@ -94,11 +102,6 @@ export const useMenu = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchData())
       .subscribe();
 
-    const configChannel = supabase
-      .channel('config_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_config' }, () => fetchData())
-      .subscribe();
-      
     const settingsChannel = supabase
       .channel('settings_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => fetchData())
@@ -107,7 +110,6 @@ export const useMenu = () => {
     return () => {
       categoriesChannel.unsubscribe();
       productsChannel.unsubscribe();
-      configChannel.unsubscribe();
       settingsChannel.unsubscribe();
     };
   }, []);
