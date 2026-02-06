@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { X, MapPin, CreditCard, MessageSquare, Phone, ChevronDown, Banknote, QrCode } from "lucide-react";
 import { CartItem, CheckoutData, Neighborhood } from "@/types/menu";
@@ -7,15 +8,17 @@ import {
   NEIGHBORHOODS,
   PAYMENT_METHODS,
 } from "@/config/menuConfig";
+import { MenuConfig } from "@/types/database";
 
 interface CheckoutProps {
   items: CartItem[];
   subtotal: number;
+  config: MenuConfig | null;
   onClose: () => void;
   onComplete: () => void;
 }
 
-export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps) {
+export function Checkout({ items, subtotal, config, onClose, onComplete }: CheckoutProps) {
   const [data, setData] = useState<CheckoutData>({
     neighborhood: null,
     address: {
@@ -44,7 +47,8 @@ export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps
   const validate = (): boolean => {
     const newErrors: string[] = [];
 
-    if (!RESTAURANT_CONFIG.schedule.isOpen) {
+    const isOpen = config !== null ? config.is_open : RESTAURANT_CONFIG.schedule.isOpen;
+    if (!isOpen) {
       newErrors.push("O restaurante está fechado no momento.");
     }
 
@@ -52,8 +56,9 @@ export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps
       newErrors.push("Seu carrinho está vazio.");
     }
 
-    if (DELIVERY_CONFIG.minimumOrderEnabled && subtotal < DELIVERY_CONFIG.minimumOrder) {
-      newErrors.push(`Pedido mínimo não atingido: ${formatPrice(DELIVERY_CONFIG.minimumOrder)}`);
+    const minOrder = config !== null ? Number(config.minimum_order) : DELIVERY_CONFIG.minimumOrder;
+    if (subtotal < minOrder) {
+      newErrors.push(`Pedido mínimo não atingido: ${formatPrice(minOrder)}`);
     }
 
     if (!data.neighborhood) {
@@ -81,8 +86,9 @@ export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps
   };
 
   const generateWhatsAppMessage = (): string => {
+    const restaurantName = config?.restaurant_name || RESTAURANT_CONFIG.name;
     const lines: string[] = [
-      "🍽️ *NOVO PEDIDO - " + RESTAURANT_CONFIG.name.toUpperCase() + "*",
+      "🍽️ *NOVO PEDIDO - " + restaurantName.toUpperCase() + "*",
       "",
       "📋 *ITENS DO PEDIDO:*",
     ];
@@ -132,7 +138,8 @@ export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps
     if (!validate()) return;
 
     const message = generateWhatsAppMessage();
-    const whatsappUrl = `https://wa.me/${RESTAURANT_CONFIG.whatsappNumber}?text=${message}`;
+    const whatsappNumber = config?.whatsapp_number || RESTAURANT_CONFIG.whatsappNumber;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
     window.open(whatsappUrl, "_blank");
     onComplete();
   };
@@ -149,6 +156,11 @@ export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps
         return <CreditCard className="w-5 h-5" />;
     }
   };
+
+  // Use neighborhoods from config if available, otherwise fallback to static
+  const neighborhoodsToUse = (config?.neighborhoods && config.neighborhoods.length > 0) 
+    ? config.neighborhoods.map((n, i) => ({ id: `db-${i}`, name: n, deliveryFee: 0 }))
+    : NEIGHBORHOODS;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -188,15 +200,15 @@ export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps
               <select
                 value={data.neighborhood?.id || ""}
                 onChange={(e) => {
-                  const neighborhood = NEIGHBORHOODS.find((n) => n.id === e.target.value);
+                  const neighborhood = neighborhoodsToUse.find((n) => n.id === e.target.value);
                   setData((prev) => ({ ...prev, neighborhood: neighborhood || null }));
                 }}
                 className="w-full appearance-none px-4 py-3 rounded-lg bg-secondary border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
               >
                 <option value="">Selecione seu bairro</option>
-                {NEIGHBORHOODS.map((n) => (
+                {neighborhoodsToUse.map((n) => (
                   <option key={n.id} value={n.id}>
-                    {n.name} - Taxa: {formatPrice(n.deliveryFee)}
+                    {n.name} {n.deliveryFee > 0 ? `- Taxa: ${formatPrice(n.deliveryFee)}` : ''}
                   </option>
                 ))}
               </select>
@@ -321,40 +333,33 @@ export function Checkout({ items, subtotal, onClose, onComplete }: CheckoutProps
             </label>
             <input
               type="tel"
-              placeholder="(00) 00000-0000"
+              placeholder="Ex: 11999999999"
               value={data.customerWhatsApp}
               onChange={(e) => setData((prev) => ({ ...prev, customerWhatsApp: e.target.value }))}
               className="w-full px-4 py-3 rounded-lg bg-secondary border border-border focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-colors"
             />
           </div>
+        </div>
 
-          {/* Order Summary */}
-          <div className="space-y-3 p-4 rounded-lg bg-secondary/50 border border-border">
-            <h3 className="font-medium">Resumo do Pedido</h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">
-                  Taxa de Entrega {data.neighborhood && `(${data.neighborhood.name})`}
-                </span>
-                <span>{formatPrice(deliveryFee)}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-border text-lg font-semibold">
-                <span>Total</span>
-                <span className="text-primary">{formatPrice(total)}</span>
-              </div>
-            </div>
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-background border-t border-border p-4 space-y-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span>{formatPrice(subtotal)}</span>
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Taxa de Entrega</span>
+            <span>{formatPrice(deliveryFee)}</span>
+          </div>
+          <div className="flex items-center justify-between font-bold text-lg">
+            <span>Total</span>
+            <span className="text-primary">{formatPrice(total)}</span>
           </div>
 
-          {/* Submit Button */}
           <button
             onClick={handleSubmit}
-            className="w-full py-4 rounded-lg bg-primary text-primary-foreground font-semibold btn-gold-hover flex items-center justify-center gap-2"
+            className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold text-lg gold-glow hover:opacity-90 transition-all active:scale-[0.98]"
           >
-            <Phone className="w-5 h-5" />
             Enviar Pedido via WhatsApp
           </button>
         </div>

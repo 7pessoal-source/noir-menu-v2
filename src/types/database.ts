@@ -23,6 +23,12 @@ export interface MenuConfig {
   whatsapp_number: string;
   minimum_order: number;
   neighborhoods: string[];
+  restaurant_name?: string;
+  restaurant_tagline?: string;
+  open_time?: string;
+  close_time?: string;
+  working_days?: string;
+  is_open?: boolean;
   updated_at: string;
 }
 

@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Header } from "@/components/menu/Header";
 import { CategoryFilter } from "@/components/menu/CategoryFilter";
@@ -6,7 +7,6 @@ import { Cart } from "@/components/menu/Cart";
 import { Checkout } from "@/components/menu/Checkout";
 import { useCart } from "@/hooks/useCart";
 import { useMenu } from "@/hooks/useMenu";
-import { ExternalLink } from "lucide-react";
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -81,7 +81,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <Header />
+      <Header config={config} />
 
       {/* Category Filter */}
       <div className="py-6 border-b border-border">
@@ -92,14 +92,14 @@ const Index = () => {
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
                 className={`
-                  px-5 py-2.5 rounded-full text-sm font-medium
-                  transition-all duration-300
-                  ${
-                    selectedCategory === category.id
-                      ? "bg-primary text-primary-foreground gold-glow"
-                      : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                  }
-                `}
+                px-5 py-2.5 rounded-full text-sm font-medium
+                transition-all duration-300
+                ${
+                  selectedCategory === category.id
+                    ? "bg-primary text-primary-foreground gold-glow"
+                    : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }
+              `}
               >
                 {category.name}
               </button>
@@ -147,15 +147,6 @@ const Index = () => {
             )}
 
             <div className="pt-6">
-              <a
-                href="https://noir-menu-adminatualizad.vercel.app"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-bold hover:opacity-90 transition-opacity"
-              >
-                <ExternalLink className="w-5 h-5" />
-                🔐 Acessar Painel Administrativo
-              </a>
               <p className="text-muted-foreground text-xs mt-4">
                 © {new Date().getFullYear()} Noir Menu
               </p>
@@ -179,6 +170,7 @@ const Index = () => {
         <Checkout
           items={items}
           subtotal={subtotal}
+          config={config}
           onClose={() => setShowCheckout(false)}
           onComplete={handleCheckoutComplete}
         />
