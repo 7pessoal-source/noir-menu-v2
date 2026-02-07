@@ -19,7 +19,6 @@ export default function Menu() {
           .from("restaurants")
           .select("id, name")
           .eq("slug", slug)
-          .eq("is_active", true)
           .single();
 
         if (restaurantError || !restaurantData) {
