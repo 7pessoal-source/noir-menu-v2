@@ -12,6 +12,7 @@ export default function Menu() {
     async function fetchData() {
       if (!slug) return;
       
+      console.log('🔍 Buscando restaurante com slug:', slug);
       try {
         setLoading(true);
         // 1️⃣ Buscar restaurante pelo slug
@@ -20,6 +21,10 @@ export default function Menu() {
           .select("id, name")
           .eq("slug", slug)
           .single();
+
+        console.log('📊 Resultado da busca:', restaurantData);
+        console.log('❌ Erro da busca:', restaurantError);
+        console.log('✅ Restaurante encontrado?', !!restaurantData);
 
         if (restaurantError || !restaurantData) {
           console.error("Restaurante não encontrado", restaurantError);
