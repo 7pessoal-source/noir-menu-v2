@@ -1,37 +1,35 @@
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { supabase } from "../integrations/supabase/client"; // Ajustado para o caminho padrão do Lovable
+import { MenuHeader } from "@/components/MenuHeader";
+import { CategoryTabs } from "@/components/CategoryTabs";
+import { ProductGrid } from "@/components/ProductGrid";
+import { supabase } from '../integrations/supabase/client';
 
-export default function Menu() {
+const Menu = () => {
   const { slug } = useParams();
-  const [products, setProducts] = useState<any[]>([]);
-  const [restaurant, setRestaurant] = useState<any>(null);
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [restaurant, setRestaurant] = useState<any>(null);
+  const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
     async function fetchData() {
       if (!slug) return;
       
-      console.log('🔍 Buscando restaurante com slug:', slug);
       try {
         setLoading(true);
-        // 1️⃣ Buscar restaurante pelo slug
+        // 1️⃣ Buscar restaurante pelo slug usando Supabase
         const { data: restaurantData, error: restaurantError } = await supabase
-          .from("restaurants")
-          .select("id, name")
-          .eq("slug", slug)
+          .from('restaurants')
+          .select('*')
+          .eq('slug', slug)
           .single();
-
-        console.log('📊 Resultado da busca:', restaurantData);
-        console.log('❌ Erro da busca:', restaurantError);
-        console.log('✅ Restaurante encontrado?', !!restaurantData);
 
         if (restaurantError || !restaurantData) {
           console.error("Restaurante não encontrado", restaurantError);
           setLoading(false);
           return;
         }
-
         setRestaurant(restaurantData);
 
         // 2️⃣ Buscar produtos pelo restaurant_id
@@ -44,7 +42,6 @@ export default function Menu() {
         if (productsError) {
           console.error("Erro ao buscar produtos", productsError);
         }
-
         setProducts(productsData || []);
       } catch (error) {
         console.error("Erro inesperado", error);
@@ -52,44 +49,58 @@ export default function Menu() {
         setLoading(false);
       }
     }
-
     fetchData();
   }, [slug]);
 
+  // Estado de loading
   if (loading) {
-    return <div className="p-8 text-center">Carregando cardápio...</div>;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" />
+          <p className="mt-4 text-muted-foreground font-medium">Carregando cardápio...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!restaurant) {
-    return <div className="p-8 text-center text-red-600 font-bold">Restaurante não encontrado</div>;
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center text-red-600 font-bold">
+          Restaurante não encontrado
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <header className="mb-8 border-b pb-4">
-        <h1 className="text-3xl font-bold">{restaurant.name}</h1>
-        <p className="text-gray-500">Cardápio Digital</p>
-      </header>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <MenuHeader />
 
-      <div className="grid gap-4">
-        {products.length === 0 ? (
-          <p className="text-gray-500">Nenhum produto disponível no momento.</p>
-        ) : (
-          products.map((product: any) => (
-            <div key={product.id} className="border rounded-lg p-4 shadow-sm flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-semibold">{product.name}</h2>
-                <p className="text-gray-600 text-sm">{product.description}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-lg font-bold text-green-700">
-                  R$ {Number(product.price).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
+      {/* Category Filter */}
+      <CategoryTabs
+        selectedCategory={selectedCategory}
+        onSelectCategory={setSelectedCategory}
+      />
+
+      {/* Products Grid */}
+      <ProductGrid
+        selectedCategory={selectedCategory}
+        onAddProduct={(product) => console.log("Adicionar produto:", product)}
+      />
+
+      {/* Footer Simples */}
+      <footer className="py-8 border-t border-border">
+        <div className="container text-center">
+          <p className="text-muted-foreground text-sm">
+            © {new Date().getFullYear()} {restaurant.name} - Todos os direitos reservados.
+          </p>
+        </div>
+      </footer>
     </div>
   );
-}
+};
+
+export default Menu;
